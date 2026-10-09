@@ -72,28 +72,39 @@ Kleinbuchstaben werden als Großbuchstaben dargestellt, andere Zeichen als Leerz
 
 Der Inhalt bleibt nach Programmende auf dem Display stehen.
 
-## Beim Booten anzeigen (optional)
-
-Eine systemd-Unit `/etc/systemd/system/boot-display.service` anlegen. Den Pfad passt du an den Ort an, an dem `boot_display` liegt:
-
-```ini
-[Unit]
-Description=Zeigt BOOT auf dem OLED-Display
-After=local-fs.target
-
-[Service]
-Type=oneshot
-ExecStart=/home/pi/c_i2cdisplay/boot_display
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Den Dienst aktivieren:
+## Installieren (Anzeige direkt beim Booten)
 
 ```bash
-sudo systemctl enable boot-display.service
+sudo make install
 ```
+
+Das erledigt:
+
+- `boot_display` nach `/usr/local/bin` kopieren
+- `boot-display.service` nach `/etc/systemd/system` installieren und aktivieren
+- `i2c-dev` in `/etc/modules-load.d/` eintragen, falls das Modul noch nicht automatisch geladen wird
+
+Der Dienst läuft in der frühen Bootphase (`DefaultDependencies=no`, `WantedBy=sysinit.target`). Er wartet nur, bis `/dev/i2c-1` existiert, und zeigt dann „BOOT“ an, typischerweise 1–3 Sekunden nach dem Kernelstart.
+
+Ohne Neustart testen:
+
+```bash
+sudo systemctl start boot-display.service
+```
+
+Prüfen, wann der Dienst beim Booten gelaufen ist:
+
+```bash
+systemd-analyze critical-chain boot-display.service
+```
+
+Wieder entfernen:
+
+```bash
+sudo make uninstall
+```
+
+Ein anderes Installationsziel ist über `PREFIX` möglich (z. B. `sudo make install PREFIX=/usr`). Mit `DESTDIR` wird nur in ein Staging-Verzeichnis installiert, ohne `systemctl`-Aufrufe.
 
 ## Fehlersuche
 
@@ -107,4 +118,5 @@ sudo systemctl enable boot-display.service
 ## Dateien
 
 - `boot_display.c`: Quellcode
-- `Makefile`: Build-Datei
+- `Makefile`: Build-Datei mit `install`/`uninstall`
+- `boot-display.service`: systemd-Dienst für die Anzeige beim Booten

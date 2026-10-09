@@ -1,0 +1,14 @@
+[Unit]
+Description=BOOT auf OLED-Display anzeigen
+DefaultDependencies=no
+After=systemd-modules-load.service
+Before=sysinit.target
+
+[Service]
+Type=oneshot
+# bis zu 5 s warten, bis /dev/i2c-1 existiert
+ExecStartPre=/bin/sh -c 'for i in $(seq 50); do [ -e /dev/i2c-1 ] && exit 0; sleep 0.1; done; exit 1'
+ExecStart=@BINDIR@/boot_display BOOT
+
+[Install]
+WantedBy=sysinit.target
